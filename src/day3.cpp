@@ -1,4 +1,6 @@
 #include <vector>
+// #include <algorithm>
+#include <numeric>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -21,9 +23,11 @@ using namespace std;
 struct point
 {
     int i, j;
+    int val = 0;
 };
 
 vector<int> parts;
+vector<point> gears;
 vector<point> symboles;
 
 int get_engine_size(string file, int &ni, int &nj)
@@ -51,9 +55,8 @@ int get_engine_size(string file, int &ni, int &nj)
     }
     return 0;
 }
-int update_table(string data_file_path, int ***table)
+void update_table(string data_file_path, int **table)
 {
-
     ifstream myfile;
     myfile.open(data_file_path);
     if (myfile.is_open())
@@ -78,102 +81,157 @@ int update_table(string data_file_path, int ***table)
                     int digit = c - '0';
                     if (reading_num)
                     {
-                        int *p_num = table[i][j - 1];
-                        *p_num = *p_num * 10 + digit;
-                        table[i][j] = p_num;
+                        int part_ind = table[i][j - 1];
+                        parts[part_ind] = parts[part_ind] * 10 + digit;
+                        table[i][j] = part_ind;
                     }
                     else
                     {
                         // create number
                         parts.push_back(digit);
-                        cout << "creat part at " << i << ", " << j << endl;
-                        table[i][j] = &(parts.back());
+                        // cout << "creat part at (" << i << ", " << j << ")" << endl;
+                        table[i][j] = parts.size() - 1; // Store ind of part
                         reading_num = true;
                     }
                 }
                 else
                 {
-                    table[i][j] = nullptr;
+                    table[i][j] = -1;
                     reading_num = false;
                     if (c != '.')
-                        symboles.push_back(point({i, j}));
+                    {
+                        point p = {i, j};
+                        symboles.push_back(p);
+                        if (c == '*')
+                        {
+                            gears.push_back(p);
+                        }
+                    }
                 }
                 j++;
             }
         }
         cout << "number of parts: " << parts.size() << endl;
+        cout << "number of symboles: " << symboles.size() << endl;
+        cout << "number of gears: " << gears.size() << endl;
     }
     else
     {
         cout << "file not open :/" << endl;
     }
-    return 0;
 }
 
 bool in_bound(int i, int j, int ni, int nj)
 {
-    return (i) > 0 &&
-           (j) > 0 &&
+    return (i) >= 0 &&
+           (j) >= 0 &&
            (i) < ni &&
            (j) < nj;
 }
 
-int count_part_from_table(int ***table, int ni, int nj)
+void filter_parts(int **table, int ni, int nj)
 {
-    int current_val = 0;
-    int res = 0;
+    vector<int> temp(parts.size(), 0);
     for (point p : symboles)
     {
         for (int i = -1; i < 2; i++)
         {
+            int current_val_ind = -1;
             for (int j = -1; j < 2; j++)
             {
                 if (i != 0 || j != 0)
                 {
                     if (in_bound(p.i + i, p.j + j, ni, nj))
                     {
-                        int *p_val = table[p.i + i][p.j + j];
-                        if (p_val != nullptr && *p_val != current_val)
+                        int I = p.i + i;
+                        int J = p.j + j;
+                        int part_ind = table[I][J];
+                        if (part_ind != -1 && part_ind != current_val_ind)
                         {
-                            cout << "p_val:" << p_val << endl;
-                            res += *p_val;
+                            // cout << "p_val:" << parts[part_ind] << " at (" << I << ", " << J << ")" << endl;
+                            temp[part_ind] = parts[part_ind];
+                            current_val_ind = part_ind;
                         }
                     }
                 }
             }
         }
     }
-    return res;
+    parts = temp;
 }
 
+void filter_gears(int **table, int ni, int nj)
+{
+    for (point &g : gears)
+    {
+        int count = 0;
+        int temp = 1;
+        for (int i = -1; i < 2; i++)
+        {
+            int current_val_ind = -1;
+            for (int j = -1; j < 2; j++)
+            {
+                if (i != 0 || j != 0)
+                {
+                    int I = g.i + i;
+                    int J = g.j + j;
+                    if (in_bound(I, J, ni, nj))
+                    {
+                        int part_ind = table[I][J];
+                        if (part_ind != -1 && part_ind != current_val_ind)
+                        {
+                            current_val_ind = part_ind;
+                            count++;
+                            temp *= parts[part_ind];
+                        }
+                    }
+                }
+            }
+        }
+        if (count == 2)
+        {
+            g.val = temp;
+            // cout << "add gear g: (" << g.i << ", " << g.j << ") value " << g.val << endl;
+        }
+    }
+}
 int main(int argc, char const *argv[])
 {
-    string data_file_path = "../data/input_day3_test.txt";
+    string data_file_path = "../data/input_day3.txt";
+    string output_file_path = "output.txt";
 
     int ni, nj;
     get_engine_size(data_file_path, ni, nj);
     cout << "ni: " << ni << "\tnj: " << nj << endl;
 
     // create a 2D array that contain pointer on part stored in vector 'parts'
-    int ***table = (int ***)malloc(ni * sizeof(int **));
+    int **table = (int **)malloc(ni * sizeof(int **));
     for (int i = 0; i < ni; i++)
     {
-        table[i] = (int **)malloc(nj * sizeof(int *));
+        table[i] = (int *)malloc(nj * sizeof(int *));
     }
 
-    // for (int i = 0; i < ni; ++i)
-    // {
-    //     for (int j = 0; j < nj; ++j)
-    //     {
-    //         table[i][j] = 0;
-    //         cout << setw(2) << table[i][j] << "; ";
-    //     }
-    //     cout << endl;
-    // }
-
     update_table(data_file_path, table);
-    int res = count_part_from_table(table, ni, nj);
-    cout << "res :" << res << endl;
+    filter_parts(table, ni, nj);
+    int res_parts = reduce(parts.begin(), parts.end());
+    cout << "res_parts:" << res_parts << endl;
+
+    int res_gear = 0;
+    filter_gears(table, ni, nj);
+    for (auto &g : gears)
+    {
+        res_gear += g.val;
+    }
+    cout << "res gears " << res_gear << endl;
+
+    if (res_parts == 4361 && res_gear == 467835)
+    {
+        cout << "OK !" << endl;
+    }
+    else
+    {
+        cout << "KO expected 4361" << endl;
+    }
 
     return 0;
 }
