@@ -1,5 +1,5 @@
 #include <vector>
-// #include <algorithm>
+#include <algorithm>
 #include <numeric>
 #include <iostream>
 #include <fstream>
@@ -197,7 +197,7 @@ void filter_gears(int **table, int ni, int nj)
 }
 int main(int argc, char const *argv[])
 {
-    string data_file_path = "../data/input_day3.txt";
+    string data_file_path = "../data/input_day3_test.txt";
     string output_file_path = "output.txt";
 
     int ni, nj;
@@ -213,7 +213,7 @@ int main(int argc, char const *argv[])
 
     update_table(data_file_path, table);
     filter_parts(table, ni, nj);
-    int res_parts = reduce(parts.begin(), parts.end());
+    int res_parts = accumulate(parts.begin(), parts.end(), 0);
     cout << "res_parts:" << res_parts << endl;
 
     int res_gear = 0;
