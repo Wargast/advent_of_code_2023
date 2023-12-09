@@ -11,11 +11,14 @@ add_executable(day1
 add_executable(day2 
   src/day2.cpp
 )
-add_executable(day3
-  src/day3.cpp
-)
+# add_executable(day3
+#   src/day3.cpp
+# )
 add_executable(day4
   src/day4.cpp
+)
+add_executable(day6 
+  src/day6.cpp
 )
 # target_include_directories(AoC_2K23 PRIVATE src)
 
