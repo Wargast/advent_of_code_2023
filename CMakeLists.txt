@@ -35,6 +35,10 @@ add_executable(day8
 add_executable(day9
   src/day9.cpp
 )
+
+add_executable(day10
+  src/day10.cpp
+)
 # target_include_directories(AoC_2K23 PRIVATE src)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
